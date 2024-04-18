@@ -44,6 +44,7 @@ public class DecisionEngine {
             return new Decision(null, null, e.getMessage());
         }
 
+
         int outputLoanAmount;
         creditModifier = getCreditModifier(personalCode);
 
@@ -51,21 +52,27 @@ public class DecisionEngine {
             throw new NoValidLoanException("No valid loan found!1");
         }
 
-        double creditScore = getCreditScore(creditModifier, loanAmount, loanPeriod);
-
-        while (highestValidLoanAmount(loanPeriod) < DecisionEngineConstants.MINIMUM_LOAN_AMOUNT) {
+        while (highestValidLoanAmount(loanPeriod) < DecisionEngineConstants.MINIMUM_LOAN_AMOUNT && loanPeriod <= DecisionEngineConstants.MAXIMUM_LOAN_PERIOD) {
             loanPeriod++;
         }
 
-        if (loanPeriod <= DecisionEngineConstants.MAXIMUM_LOAN_PERIOD) {
-            outputLoanAmount = Math.min(DecisionEngineConstants.MAXIMUM_LOAN_AMOUNT, highestValidLoanAmount(loanPeriod));
-        } else {
-            throw new NoValidLoanException("No valid loan found!2");
+        outputLoanAmount = Math.min(DecisionEngineConstants.MAXIMUM_LOAN_AMOUNT, highestValidLoanAmount(loanPeriod));
+
+        double creditScore = getCreditScore(creditModifier, loanAmount, loanPeriod);
+
+        if (creditScore < 1) {
+            return new Decision(outputLoanAmount, loanPeriod, "Not approved due to bad credit score!");
         }
 
         return new Decision(outputLoanAmount, loanPeriod, null);
+
     }
 
+    /**
+     * Calculates credit score based on credit modifier, loan amount and loan period
+     *
+     * @return credit score
+     */
     private double getCreditScore(int creditModifier, Long loanAmount, int loanPeriod) {
         return ((double) creditModifier / loanAmount) * loanPeriod;
     }
