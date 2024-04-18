@@ -48,7 +48,7 @@ public class DecisionEngine {
         creditModifier = getCreditModifier(personalCode);
 
         if (creditModifier == 0) {
-            throw new NoValidLoanException("No valid loan found!");
+            throw new NoValidLoanException("No valid loan found!1");
         }
 
         while (highestValidLoanAmount(loanPeriod) < DecisionEngineConstants.MINIMUM_LOAN_AMOUNT) {
@@ -58,7 +58,7 @@ public class DecisionEngine {
         if (loanPeriod <= DecisionEngineConstants.MAXIMUM_LOAN_PERIOD) {
             outputLoanAmount = Math.min(DecisionEngineConstants.MAXIMUM_LOAN_AMOUNT, highestValidLoanAmount(loanPeriod));
         } else {
-            throw new NoValidLoanException("No valid loan found!");
+            throw new NoValidLoanException("No valid loan found!2");
         }
 
         return new Decision(outputLoanAmount, loanPeriod, null);
@@ -86,14 +86,22 @@ public class DecisionEngine {
     private int getCreditModifier(String personalCode) {
         int segment = Integer.parseInt(personalCode.substring(personalCode.length() - 4));
 
-        if (segment < 2500) {
+        // 49002010965
+        int constraint1 = 956;
+        // 49002010976
+        int constraint2 = 976;
+        // 49002010987
+        int constraint3 = 987;
+
+        if (segment == constraint1){
             return 0;
-        } else if (segment < 5000) {
+        } else if (segment == constraint2) {
             return DecisionEngineConstants.SEGMENT_1_CREDIT_MODIFIER;
-        } else if (segment < 7500) {
+        } else if (segment == constraint3) {
             return DecisionEngineConstants.SEGMENT_2_CREDIT_MODIFIER;
         }
 
+        // 49002010998 and others
         return DecisionEngineConstants.SEGMENT_3_CREDIT_MODIFIER;
     }
 
