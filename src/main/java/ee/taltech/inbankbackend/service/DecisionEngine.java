@@ -51,6 +51,8 @@ public class DecisionEngine {
             throw new NoValidLoanException("No valid loan found!1");
         }
 
+        double creditScore = getCreditScore(creditModifier, loanAmount, loanPeriod);
+
         while (highestValidLoanAmount(loanPeriod) < DecisionEngineConstants.MINIMUM_LOAN_AMOUNT) {
             loanPeriod++;
         }
@@ -64,12 +66,17 @@ public class DecisionEngine {
         return new Decision(outputLoanAmount, loanPeriod, null);
     }
 
+    private double getCreditScore(int creditModifier, Long loanAmount, int loanPeriod) {
+        return ((double) creditModifier / loanAmount) * loanPeriod;
+    }
+
     /**
      * Calculates the largest valid loan for the current credit modifier and loan period.
      *
      * @return Largest valid loan amount
      */
     private int highestValidLoanAmount(int loanPeriod) {
+
         return creditModifier * loanPeriod;
     }
 
