@@ -2,11 +2,11 @@ package ee.taltech.inbankbackend.service;
 
 import com.github.vladislavgoltjajev.personalcode.locale.estonia.EstonianPersonalCodeValidator;
 import ee.taltech.inbankbackend.config.DecisionEngineConstants;
-import ee.taltech.inbankbackend.exceptions.InvalidLoanAmountException;
-import ee.taltech.inbankbackend.exceptions.InvalidLoanPeriodException;
-import ee.taltech.inbankbackend.exceptions.InvalidPersonalCodeException;
-import ee.taltech.inbankbackend.exceptions.NoValidLoanException;
+import ee.taltech.inbankbackend.exceptions.*;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.Period;
 
 /**
  * A service class that provides a method for calculating an approved loan amount and period for a customer.
@@ -40,7 +40,8 @@ public class DecisionEngine {
             NoValidLoanException {
         try {
             verifyInputs(personalCode, loanAmount, loanPeriod);
-        } catch (Exception e) {
+            verifyAge(personalCode);
+        } catch (Exception | NotValidAgeException e) {
             return new Decision(null, null, e.getMessage());
         }
 
@@ -59,11 +60,21 @@ public class DecisionEngine {
 
     }
 
+    /**
+     * Calculates highest valid amount and checks if it is smaller than maximum loan amount
+     *
+     * @return highest possible amount to loan
+     */
     private int calculateOutputLoanAmount(int loanPeriod) {
         int highestValidAmount = highestValidLoanAmount(loanPeriod);
         return Math.min(DecisionEngineConstants.MAXIMUM_LOAN_AMOUNT, highestValidAmount);
     }
 
+    /**
+     * If needed to adjust the loan period to get approved loan
+     *
+     * @return adjusted loan period
+     */
     private int adjustLoanPeriod(int loanPeriod) {
         while (highestValidLoanAmount(loanPeriod) < DecisionEngineConstants.MINIMUM_LOAN_AMOUNT && loanPeriod <= DecisionEngineConstants.MAXIMUM_LOAN_PERIOD) {
             loanPeriod++;
@@ -148,5 +159,39 @@ public class DecisionEngine {
             throw new InvalidLoanPeriodException("Invalid loan period!");
         }
 
+    }
+
+    /**
+     * Verifies if the customer is in allowed age group
+     *
+     * @throws NoValidLoanException
+     */
+    private void verifyAge(String personalCode) throws NotValidAgeException {
+        int minimumAge = 18;
+        int maximumAge = 80 - DecisionEngineConstants.MAXIMUM_LOAN_PERIOD/12;
+
+        int customerAge = findAge(personalCode);
+
+        if (customerAge < minimumAge || customerAge > maximumAge) {
+            throw new NotValidAgeException("Loan cannot be approved due to age constraints. Age: " + customerAge);
+        }
+    }
+
+    /**
+     * Finds customers age based on their personal code
+     *
+     * @return age
+     */
+    private int findAge(String personalCode) {
+        int century = personalCode.charAt(0) == '5' || personalCode.charAt(0) == '6' ? 2000 : 1900;
+        int birthYear = Integer.parseInt(personalCode.substring(1, 3)) + century;
+        int birthMonth = Integer.parseInt(personalCode.substring(3, 5));
+        int birthDay = Integer.parseInt(personalCode.substring(5, 7));
+
+        LocalDate birthDate = LocalDate.of(birthYear, birthMonth, birthDay);
+        LocalDate currentDate = LocalDate.now();
+
+        Period age = Period.between(birthDate, currentDate);
+        return age.getYears();
     }
 }
